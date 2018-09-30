@@ -29,18 +29,32 @@ class myDataset(torch.utils.data.Dataset):
         return self._sent2np(one_data['context']), self._sent2np(one_data['question']), [self._sent2np(option) for option in one_data['options']], one_data['id'], one_data['answer']-1 # assume answer is 1 based
 
     @staticmethod
-    def collate_fn(batch):
-        def _pad_sequence(np_list):
-            tensor_list = [torch.from_numpy(np_array) for np_array in np_list]
-            return torch.nn.utils.rnn.pad_sequence(tensor_list, batch_first=True)
-        # for dataloader
-        all_context, all_question, all_option, all_id, all_answer = zip(*batch)
-        option_num = len(all_option[0])
-        flatten_option = [item for sublist in all_option for item in sublist]
-        pad_option = _pad_sequence(flatten_option)
-        pad_option = pad_option.view([int(pad_option.size()[0]/option_num),option_num,pad_option.size()[1], pad_option.size()[2]])
+    def get_collate_fn(quesion_length, option_length):
 
-        return _pad_sequence(all_context), _pad_sequence(all_question), pad_option, all_id, torch.tensor(all_answer)
+        def _pad_sequence(np_list, length=None):
+            tensor_list = [torch.from_numpy(np_array) for np_array in np_list]
+            pad_tensor = torch.nn.utils.rnn.pad_sequence(tensor_list, batch_first=True)
+            if length is None:
+                return pad_tensor
+            else:
+                pad_length = pad_tensor.size()[1]
+                if pad_length >= length:
+                    return pad_tensor[:, :length, :]
+                else:
+                    pad = torch.zeros([pad_tensor.size()[0], length-pad_length, pad_tensor.size()[2]])
+                    return torch.cat([pad_tensor, pad], 1)
+
+        def collate_fn(batch):
+                    # for dataloader
+            all_context, all_question, all_option, all_id, all_answer = zip(*batch)
+            pad_question = _pad_sequence(all_question, length=quesion_length)
+            option_num = len(all_option[0])
+            flatten_option = [item for sublist in all_option for item in sublist]
+            pad_option = _pad_sequence(flatten_option, length=option_length)
+            pad_option = pad_option.view([int(pad_option.size()[0]/option_num),option_num,pad_option.size()[1], pad_option.size()[2]])
+            return _pad_sequence(all_context), pad_question, pad_option, all_id, torch.tensor(all_answer)
+
+        return collate_fn
 
     def _sent2np(self, text):
         text = text_norm_before_cut(text)
@@ -53,7 +67,7 @@ class myDataset(torch.utils.data.Dataset):
 if __name__ == '__main__':
     path = 'data/result_kaldi2.json'
     dataset = myDataset(path)
-    merge_option = myDataset.collate_fn([dataset.processed_data[0]])[0].size()
-    print('merge option size', merge_option)
-    print('option1', dataset.data[0]['options'])
-    print('option2', dataset.data[1]['options'])
+    collate_fn = myDataset.get_collate_fn(10, 3)
+    merge = collate_fn([dataset.processed_data[0], dataset.processed_data[0]])
+    print('question shape', merge[2][0][1])
+    #print('option shape', merge[2].size())

@@ -14,63 +14,78 @@ parser.add_argument('pos1', default='train', type=str,
                     help='train or test (default: train)')
 parser.add_argument('--epochs', default=50, type=int, metavar='N',
                     help='number of total epochs to run (default: 50)')
-parser.add_argument('-b', '--batch-size', default=20, type=int,
+parser.add_argument('-b', '--batch_size', default=20, type=int,
                     metavar='N', help='mini-batch size (default: 20)')
-parser.add_argument('-lr', '--learning-rate', default=0.001, type=float,
+parser.add_argument('-lr', '--learning_rate', default=0.001, type=float,
                     metavar='LR', help='initial learning rate (default: 0.001)')
 
-parser.add_argument('-filter_num', '--filter_num', default=128, type=int,
-                    help='the number of the filter (default: 128)')
+parser.add_argument('-filter_num', '--filter_num', default=256, type=int,
+                    help='the number of the filter (default: 256)')
 parser.add_argument('-filter_size', '--filter_size', default=3, type=int,
                     help='the size of the filter (default: 3)')
-parser.add_argument('-dnn_size', '--dnn_size', default=128, type=int,
-                    help='the size of the dnn layer (default: 128)')
+parser.add_argument('-dnn_size', '--dnn_size', default=256, type=int,
+                    help='the size of the dnn layer (default: 256)')
 parser.add_argument('-dr', '--dropout', default=0.2, type=float,
                     metavar='DR', help='dropout rate (default: 0.2)')
 
-parser.add_argument('--data', default='', type=str, metavar='PATH',
-                    help='The path of the training or testing data (default: none)')
-parser.add_argument('--resume', default='', type=str, metavar='PATH',
+parser.add_argument('--question_length', default=20, type=int,
+                    help='the length of question (default: 20)')
+parser.add_argument('--option_length', default=3, type=int,
+                    help='the length of option (default: 3)')
+
+parser.add_argument('--train_data', default='', type=str, metavar='PATH',
+                    help='The path of the training (default: none)')
+parser.add_argument('--dev_data', default='', type=str, metavar='PATH',
+                    help='The path of the dev (default: none)')
+parser.add_argument('--test_data', default='', type=str, metavar='PATH',
+                    help='The path of the testing (default: none)')
+parser.add_argument('--resume_dir', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
-parser.add_argument('--save-dir',
+parser.add_argument('--save_dir',
                     help='The directory used to save the trained models',
                     default='save_temp', type=str)
-parser.add_argument('--test-result', dest='test_result',
+parser.add_argument('--log',help='training log file',
+                    default='./log', type=str)
+parser.add_argument('--test_result', dest='test_result',
                     help='The output path of the inference result',
                     default='', type=str)
 
 def main(args):
-    dataset = myDataset(args.data)
     if args.pos1 == 'train':
+        train_dataset = myDataset(args.train_data)
+        dev_dataset = myDataset(args.dev_data)
         #prepare dataloader
-        data_loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch-size,
-                                                  shuffle=True, num_workers=4, collate_fn=myDataset.collate_fn)
+        train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4, collate_fn=myDataset.get_collate_fn(args.question_length, args.option_length))
+        dev_data_loader = torch.utils.data.DataLoader(dev_dataset, batch_size=args.batch_size, num_workers=4, collate_fn=myDataset.get_collate_fn(args.question_length, args.option_length))
         saver = pytorch_saver(10, args.save_dir)
         #build model
-        model = qacnn_1d(dataset.word_dim, args.filter_num, args.filter_size,
-                         args.dnn_size, args.dropout, dataset.choice_num)
+        model = qacnn_1d(args.question_length, args.option_length, args.filter_num, args.filter_size, args.dnn_size, dropout=args.dropout)
         if args.resume:
-            model.load_state_dict(pytorch_saver.load_dir(args.resume)['state_dict'])
+            model.load_state_dict(pytorch_saver.load_dir(args.resume_dir)['state_dict'])
 
         model.train()
         model.cuda()
-        train(model, data_loader, saver, args.epochs, args.lr)
+        train(model, train_data_loader, dev_data_loader, saver, args.epochs, args.lr, args.log)
 
 
     else:
-        data_loader = torch.utils.data.DataLoader(dataset, batch_size=1,
+        test_dataset = myDataset(args.test_data)
+        test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1,
                                                   shuffle=False, num_workers=1)
-        if args.resume == '':
+        if args.resume_dir == '':
             print("resume should exist in inference mode", file=sys.stderr)
             sys.exit(-1)
         else:
-            model = qacnn_1d(dataset.word_dim, args.filter_num, args.filter_size,
-                             args.dnn_size, args.dropout, dataset.choice_num)
-            model.load_state_dict(pytorch_saver.load_dir(args.resume)['state_dict'])
+            model = qacnn_1d(args.question_length, args.option_length, args.filter_num, args.filter_size, args.dnn_size, dropout=args.dropout)
+            model.load_state_dict(pytorch_saver.load_dir(args.resume_dir)['state_dict'])
             model.eval()
             model.cuda()
 
-            inference(model, data_loader, output_path)
+            inference(model, test_data_loader, args.test_result)
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+    main(args)
 
 
 

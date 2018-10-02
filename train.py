@@ -66,7 +66,9 @@ def train(model, train_data_loader, dev_data_loader, saver, total_epoch, lr, log
         else:
             log = f'higher loss!!!!!!'
             print_and_logging(f_log, log)
-        '''
+    log = 'training end, max dev acc: ' + str(max_dev_acc)
+    print_and_logging(f_log, log)
+    '''
         #save model
         if min_loss > average_loss:
             min_loss = average_loss
@@ -85,7 +87,7 @@ def train(model, train_data_loader, dev_data_loader, saver, total_epoch, lr, log
         else:
             log = f'average loss: {average_loss}, higher loss!!!!!!'
             print_and_logging(f_log, log)
-        '''
+    '''
 
 
 

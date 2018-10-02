@@ -12,9 +12,9 @@ from inference import inference
 parser = argparse.ArgumentParser(description='PyTorch 1D QACNN')
 parser.add_argument('pos1', default='train', type=str,
                     help='train or test (default: train)')
-parser.add_argument('--epochs', default=50, type=int, metavar='N',
+parser.add_argument('--epochs', default=100, type=int, metavar='N',
                     help='number of total epochs to run (default: 50)')
-parser.add_argument('-b', '--batch_size', default=20, type=int,
+parser.add_argument('-b', '--batch_size', default=32, type=int,
                     metavar='N', help='mini-batch size (default: 20)')
 parser.add_argument('-lr', '--learning_rate', default=0.001, type=float,
                     metavar='LR', help='initial learning rate (default: 0.001)')

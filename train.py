@@ -61,7 +61,7 @@ def train(model, train_data_loader, dev_data_loader, saver, total_epoch, lr, log
                 'train_average_accuracy': average_accuracy,
                 'dev_acc': dev_acc
             }
-            name = f'epoch_{epoch}_average_accuracy_{average_accuracy}'
+            name = f'epoch_{epoch}_dev_accuracy_{dev_acc}'
             saver.save(state, name)
         else:
             log = f'higher loss!!!!!!'

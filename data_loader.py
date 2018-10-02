@@ -26,13 +26,16 @@ class myDataset(torch.utils.data.Dataset):
         return self.processed_data[idx]
 
     def process_data(self, one_data):
-        return self._sent2np(one_data['context']), self._sent2np(one_data['question']), [self._sent2np(option) for option in one_data['options']], one_data['id'], one_data['answer']-1 # assume answer is 1 based
+        return self._sent2np(one_data['context']), self._sent2np(one_data['question']), [self._sent2np(option) for option in one_data['options']], one_data['id'], one_data['answer'] # assume answer is 1 based
 
     @staticmethod
     def get_collate_fn(quesion_length, option_length):
 
         def _pad_sequence(np_list, length=None):
             tensor_list = [torch.from_numpy(np_array) for np_array in np_list]
+            #print('tensor length: ', len(tensor_list))
+            #for tensor in tensor_list:
+            #    print('shape', tensor.size())
             pad_tensor = torch.nn.utils.rnn.pad_sequence(tensor_list, batch_first=True)
             if length is None:
                 return pad_tensor
@@ -61,6 +64,8 @@ class myDataset(torch.utils.data.Dataset):
         word_list = list(jieba.cut(text))
         #word_list = list(text)
         word_list = text_norm_after_cut(word_list)
+        if len(word_list) == 0:
+            word_list = ['空', '字串']
 
         return np.array([self.model.get_word_vector(word) for word in word_list])
 

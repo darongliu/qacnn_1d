@@ -7,7 +7,7 @@ class pytorch_saver():
         self.keep_num = int(keep_num)
         self.save_dir = save_dir
         if not os.path.isdir(self.save_dir):
-            os.mkdir(self.save_dir)
+            os.makedirs(self.save_dir)
         self.checkpoint = []  # [old(low epoch).......new(high epoch)]
 
     def save(self, state, file_name):

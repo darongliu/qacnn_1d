@@ -28,9 +28,9 @@ parser.add_argument('-dnn_size', '--dnn_size', default=256, type=int,
 parser.add_argument('-dr', '--dropout', default=0.2, type=float,
                     metavar='DR', help='dropout rate (default: 0.2)')
 
-parser.add_argument('--question_length', default=20, type=int,
+parser.add_argument('--question_length', default=30, type=int,
                     help='the length of question (default: 20)')
-parser.add_argument('--option_length', default=3, type=int,
+parser.add_argument('--option_length', default=35, type=int,
                     help='the length of option (default: 3)')
 
 parser.add_argument('--train_data', default='', type=str, metavar='PATH',
@@ -60,12 +60,12 @@ def main(args):
         saver = pytorch_saver(10, args.save_dir)
         #build model
         model = qacnn_1d(args.question_length, args.option_length, args.filter_num, args.filter_size, args.dnn_size, dropout=args.dropout)
-        if args.resume:
+        if args.resume_dir != '':
             model.load_state_dict(pytorch_saver.load_dir(args.resume_dir)['state_dict'])
 
         model.train()
         model.cuda()
-        train(model, train_data_loader, dev_data_loader, saver, args.epochs, args.lr, args.log)
+        train(model, train_data_loader, dev_data_loader, saver, args.epochs, args.learning_rate, args.log)
 
 
     else:
@@ -88,4 +88,5 @@ if __name__ == '__main__':
     main(args)
 
 
-
+#filter need deeper
+#add dropout

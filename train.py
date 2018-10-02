@@ -7,7 +7,7 @@ from evaluate import evaluate
 from utils.utils import *
 
 def train(model, train_data_loader, dev_data_loader, saver, total_epoch, lr, log_path, start_epoch=0):
-    f_log = open(log_path, 'r')
+    f_log = open(log_path, 'w')
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -31,15 +31,15 @@ def train(model, train_data_loader, dev_data_loader, saver, total_epoch, lr, log
             optimizer.step()
 
 
-            total_loss = total_loss + loss.cpu().numpy()[0]
+            total_loss = total_loss + loss.detach().cpu().numpy()
             _, predict = torch.max(output, 1)
-            total_correct += (predict == answer).sum().cpu().numpy()[0]
+            total_correct += (predict == answer).sum().detach().cpu().numpy()
             total_count += context.size()[0]
 
             average_loss = total_loss/total_count
             average_accuracy = total_correct/total_count
 
-            log = f'batch: {i}/{len(data_loader)}, train average loss: {average_loss}, train average accuracy: {average_accuracy}'
+            log = f'batch: {i}/{len(train_data_loader)}, train average loss: {average_loss}, train average accuracy: {average_accuracy}'
             print_and_logging(f_log, log)
 
         #evaluate on dev data

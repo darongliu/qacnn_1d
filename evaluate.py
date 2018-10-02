@@ -7,8 +7,6 @@ from utils.utils import *
 
 def evaluate(model, data_loader):
     model.eval()
-    f_log = open(log_path, 'r')
-
     total_correct = 0
     total_count = 0
     with torch.no_grad():
@@ -18,7 +16,7 @@ def evaluate(model, data_loader):
 
             output = model(context, question, option)
             _, predict = torch.max(output, 1)
-            total_correct += (predict == answer).sum().cpu().numpy()[0]
+            total_correct += (predict == answer).sum().detach().cpu().numpy()
             total_count += context.size()[0]
 
     return total_correct/total_count

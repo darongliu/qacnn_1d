@@ -2,21 +2,45 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+class multi_Conv1d(nn.Module):
+    def __init__(self, input_channel, filter_num_list, filter_size_list, dropout):
+        super(multi_Conv1d, self).__init__()
+        assert(len(filter_num_list) == len(filter_size_list))
+        self.conv_layers_list = []
+        self.dropout_layers_list = []
+        for idx in range(len(filter_num_list)):
+            if idx == 0:
+                self.conv_layers_list.append(nn.Conv1d(input_channel, filter_num_list[0], filter_size_list[0]))
+            else:
+                self.conv_layers_list.append(nn.Conv1d(filter_num_list[idx-1], filter_num_list[idx], filter_size_list[idx]))
+            self.dropout_layers_list.append(nn.Dropout(dropout))
+        self.layers = nn.ModuleList(self.conv_layers_list+self.dropout_layers_list)
+    def forward(self, input_tensor):
+        output = input_tensor
+        for i in range(len(self.conv_layers_list)-1):
+            output = self.conv_layers_list[i](output)
+            output = F.relu(output)
+            output = self.dropout_layers_list[i](output)
+        return self.conv_layers_list[-1](output)
+
 class qacnn_1d(nn.Module):
-    def __init__(self, question_length, option_length, filter_num_1, filter_size_1, dnn_size, dropout=1):
+    def __init__(self, question_length, option_length, filter_num, filter_size, cnn_layers, dnn_size, dropout=0.1):
         super(qacnn_1d, self).__init__()
         self.question_length = question_length
         self.option_length = option_length
         self.dropout = dropout
 
-        self.conv_first_att = nn.Conv1d(question_length, filter_num_1, filter_size_1)
-        self.conv_first_pq  = nn.Conv1d(question_length, filter_num_1, filter_size_1)
-        self.conv_first_pc  = nn.Conv1d(option_length, filter_num_1, filter_size_1)
+        filter_num_list = [filter_num]*cnn_layers
+        filter_size_list = [filter_size]*cnn_layers
+        self.conv_first_att =  multi_Conv1d(question_length, filter_num_list, filter_size_list, dropout)
+        self.conv_first_pq  =  multi_Conv1d(question_length, filter_num_list, filter_size_list, dropout)
+        self.conv_first_pc  =  multi_Conv1d(option_length, filter_num_list, filter_size_list, dropout)
 
-        self.linear_second_pq = nn.Linear(filter_num_1, filter_num_1)
-        self.linear_second_pc = nn.Linear(filter_num_1, filter_num_1)
+        self.linear_second_pq = nn.Linear(filter_num, filter_num)
+        self.linear_second_pc = nn.Linear(filter_num, filter_num)
 
-        self.linear_output_1 = nn.Linear(filter_num_1, dnn_size)
+        self.linear_output_dropout = nn.Dropout(dropout)
+        self.linear_output_1 = nn.Linear(filter_num, dnn_size)
         self.linear_output_2 = nn.Linear(dnn_size, 1)
 
     def forward(self, p, q, c):
@@ -46,7 +70,8 @@ class qacnn_1d(nn.Module):
         second_final_representation = second_att * second_pc
 
         #output
-        output = self.linear_output_2(torch.tanh(self.linear_output_1(second_final_representation)))
+        output = self.linear_output_dropout(second_final_representation)
+        output = self.linear_output_2(torch.tanh(self.linear_output_1(output)))
         output = output.view([-1, option_num])
 
         return F.softmax(output, dim=-1)

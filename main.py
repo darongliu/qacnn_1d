@@ -23,10 +23,12 @@ parser.add_argument('-filter_num', '--filter_num', default=256, type=int,
                     help='the number of the filter (default: 256)')
 parser.add_argument('-filter_size', '--filter_size', default=3, type=int,
                     help='the size of the filter (default: 3)')
+parser.add_argument('-cnn_layers', '--cnn_layers', default=3, type=int,
+                    help='the number of the cnn layers(default: 3)')
 parser.add_argument('-dnn_size', '--dnn_size', default=256, type=int,
                     help='the size of the dnn layer (default: 256)')
-parser.add_argument('-dr', '--dropout', default=0.2, type=float,
-                    metavar='DR', help='dropout rate (default: 0.2)')
+parser.add_argument('-dr', '--dropout', default=0.1, type=float,
+                    metavar='DR', help='dropout rate (default: 0.1)')
 
 parser.add_argument('--question_length', default=30, type=int,
                     help='the length of question (default: 20)')
@@ -59,7 +61,7 @@ def main(args):
         dev_data_loader = torch.utils.data.DataLoader(dev_dataset, batch_size=args.batch_size, num_workers=4, collate_fn=myDataset.get_collate_fn(args.question_length, args.option_length))
         saver = pytorch_saver(10, args.save_dir)
         #build model
-        model = qacnn_1d(args.question_length, args.option_length, args.filter_num, args.filter_size, args.dnn_size, dropout=args.dropout)
+        model = qacnn_1d(args.question_length, args.option_length, args.filter_num, args.filter_size, args.cnn_layers, args.dnn_size, dropout=args.dropout)
         if args.resume_dir != '':
             model.load_state_dict(pytorch_saver.load_dir(args.resume_dir)['state_dict'])
 
@@ -76,7 +78,7 @@ def main(args):
             print("resume should exist in inference mode", file=sys.stderr)
             sys.exit(-1)
         else:
-            model = qacnn_1d(args.question_length, args.option_length, args.filter_num, args.filter_size, args.dnn_size, dropout=args.dropout)
+            model = qacnn_1d(args.question_length, args.option_length, args.filter_num, args.filter_size, args.cnn_layers, args.dnn_size, dropout=args.dropout)
             model.load_state_dict(pytorch_saver.load_dir(args.resume_dir)['state_dict'])
             model.eval()
             model.cuda()

@@ -2,8 +2,8 @@ gpu_id=0
 
 mode='train'
 
-train_data='/home/darong/darong/qacnn_1d/data/movie_qa/train_part.json'
-dev_data='/home/darong/darong/qacnn_1d/data/movie_qa/dev_part.json'
+train_data='/home/darong/darong/qacnn_1d/data/movie_qa/train.json'
+dev_data='/home/darong/darong/qacnn_1d/data/movie_qa/dev.json'
 
 resume_dir=''
 save_dir='./model/movie_qa'

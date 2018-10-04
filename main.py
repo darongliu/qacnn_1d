@@ -1,6 +1,7 @@
 import argparse
 import torch
 import sys
+import os
 
 from model import qacnn_1d
 from data_loader import myDataset
@@ -67,6 +68,7 @@ def main(args):
 
         model.train()
         model.cuda()
+        args.log = os.path.join(args.save_dir, args.log)
         train(model, train_data_loader, dev_data_loader, saver, args.epochs, args.learning_rate, args.log)
 
 

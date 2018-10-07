@@ -118,11 +118,12 @@ if __name__ == '__main__':
     question_length = 10
     option_length = 5
     test_passage_length = 20
+    cnn_layers=2
     test_batch_size = 32
     test_word_dim = 300
     test_option_num = 5
 
-    qacnn = qacnn_1d(question_length, option_length, 256, 3, 256)
+    qacnn = qacnn_1d(question_length, option_length, 256, 3, cnn_layers, 256, test_word_dim)
     p = torch.rand([test_batch_size, test_passage_length, test_word_dim])
     print(p)
     print(p.type())

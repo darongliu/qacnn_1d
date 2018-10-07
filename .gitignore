@@ -1,0 +1,5 @@
+*.pyc
+model/*
+data/*
+*__pycache__*
+word2vec/*

@@ -12,15 +12,18 @@ class multi_Conv1d(nn.Module):
             if idx == 0:
                 self.conv_layers_list.append(nn.Conv1d(input_channel, filter_num_list[0], filter_size_list[0]))
             else:
-                self.conv_layers_list.append(nn.Conv1d(filter_num_list[idx-1], filter_num_list[idx], filter_size_list[idx]))
+                self.conv_layers_list.append(nn.Conv1d(filter_num_list[idx-1], filter_num_list[idx], filter_size_list[idx], padding=int((filter_size_list[idx]-1)/2)))
             self.dropout_layers_list.append(nn.Dropout(dropout))
         self.layers = nn.ModuleList(self.conv_layers_list+self.dropout_layers_list)
     def forward(self, input_tensor):
         output = input_tensor
         for i in range(len(self.conv_layers_list)-1):
+            previous_output = output
             output = self.conv_layers_list[i](output)
             output = F.relu(output)
             output = self.dropout_layers_list[i](output)
+            if i>0:
+                output += previous_output
         return self.conv_layers_list[-1](output)
 
 class qacnn_1d(nn.Module):

@@ -26,12 +26,39 @@ class multi_Conv1d(nn.Module):
                 output += previous_output
         return self.conv_layers_list[-1](output)
 
+class similarity_map(nn.Module):
+    def __init__(self, word_dim, dropout=0.1):
+        super(similarity_map, self).__init__()
+        self.dropout = dropout
+        self.linear_1 = nn.Linear(word_dim*2, word_dim*2)
+        self.dropout_1 = nn.Dropout(dropout)
+        self.linear_2 = nn.Linear(word_dim*2, 1)
+
+    def forward(self, a, b):
+        size_a = a.size()[1]
+        size_b = b.size()[1]
+
+        a_expand = a.unsqueeze(2).repeat(1,1,size_b,1)
+        b_expand = b.unsqueeze(1).repeat((1,size_a,1,1))
+        merge_tensor = torch.cat([a_expand, b_expand], -1)
+
+        output = merge_tensor
+        output = self.linear_1(output)
+        output = self.dropout_1(output)
+        output = F.relu(output)
+        output = self.linear_2(output)
+        output = F.sigmoid(output.squeeze(-1))
+        return output
+
 class qacnn_1d(nn.Module):
-    def __init__(self, question_length, option_length, filter_num, filter_size, cnn_layers, dnn_size, dropout=0.1):
+    def __init__(self, question_length, option_length, filter_num, filter_size, cnn_layers, dnn_size, word_dim, dropout=0.1):
         super(qacnn_1d, self).__init__()
         self.question_length = question_length
         self.option_length = option_length
         self.dropout = dropout
+
+        self.similarity_layer_pq = similarity_map(word_dim, dropout)
+        self.similarity_layer_pc = similarity_map(word_dim, dropout)
 
         filter_num_list = [filter_num]*cnn_layers
         filter_size_list = [filter_size]*cnn_layers
@@ -56,8 +83,8 @@ class qacnn_1d(nn.Module):
         q = q.view([q.size()[0]*option_num, q.size()[2], q.size()[3]])
         c = c.view([c.size()[0]*option_num, c.size()[2], c.size()[3]])
 
-        pq_map = self.compute_similarity_map(p, q) # [batch x p_length x q_length]
-        pc_map = self.compute_similarity_map(p, c) # [batch x p_length x c_length]
+        pq_map = self.similarity_layer_pq(p, q) # [batch x p_length x q_length]
+        pc_map = self.similarity_layer_pc(p, c) # [batch x p_length x c_length]
         pq_map = pq_map.permute([0,2,1]) # [batch x q_length x p_length]
         pc_map = pc_map.permute([0,2,1]) # [batch x c_length x p_length]
 

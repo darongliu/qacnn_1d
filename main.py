@@ -62,7 +62,7 @@ def main(args):
         dev_data_loader = torch.utils.data.DataLoader(dev_dataset, batch_size=args.batch_size, num_workers=4, collate_fn=myDataset.get_collate_fn(args.question_length, args.option_length))
         saver = pytorch_saver(10, args.save_dir)
         #build model
-        model = qacnn_1d(args.question_length, args.option_length, args.filter_num, args.filter_size, args.cnn_layers, args.dnn_size, dropout=args.dropout)
+        model = qacnn_1d(args.question_length, args.option_length, args.filter_num, args.filter_size, args.cnn_layers, args.dnn_size, train_data_loader.word_dim, dropout=args.dropout)
         if args.resume_dir != '':
             model.load_state_dict(pytorch_saver.load_dir(args.resume_dir)['state_dict'])
 
@@ -80,7 +80,7 @@ def main(args):
             print("resume should exist in inference mode", file=sys.stderr)
             sys.exit(-1)
         else:
-            model = qacnn_1d(args.question_length, args.option_length, args.filter_num, args.filter_size, args.cnn_layers, args.dnn_size, dropout=args.dropout)
+            model = qacnn_1d(args.question_length, args.option_length, args.filter_num, args.filter_size, args.cnn_layers, args.dnn_size, test_data_loader.word_dim, dropout=args.dropout)
             model.load_state_dict(pytorch_saver.load_dir(args.resume_dir)['state_dict'])
             model.eval()
             model.cuda()

@@ -1,13 +1,13 @@
-gpu_id=3
+gpu_id=0
 
 mode='train'
-batch_size=32
+batch_size=10
 
 train_data='/home/kgb/qacnn_1d/data/train.json'
 dev_data='/home/kgb/qacnn_1d/data/dev.json'
 
 dropout=0.1
-cnn_layers=4
+cnn_layers=3
 
 #resume_dir='./model/movie_qa'
 save_dir='./model/kgb_4_nn'

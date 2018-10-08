@@ -27,26 +27,28 @@ class multi_Conv1d(nn.Module):
         return self.conv_layers_list[-1](output)
 
 class similarity_map(nn.Module):
-    def __init__(self, word_dim, dropout=0.1):
+    def __init__(self, word_dim, hidden_units=1, dropout=0.1):
         super(similarity_map, self).__init__()
         self.dropout = dropout
-        self.linear_1 = nn.Linear(word_dim*2, word_dim*2)
-        self.dropout_1 = nn.Dropout(dropout)
-        self.linear_2 = nn.Linear(word_dim*2, 1)
+        self.linear_1_a = nn.Linear(word_dim, hidden_units)
+        self.linear_1_b = nn.Linear(word_dim, hidden_units)
+        #self.dropout_1 = nn.Dropout(dropout)
+        #self.linear_2 = nn.Linear(hidden_units, 1)
 
     def forward(self, a, b):
         size_a = a.size()[1]
         size_b = b.size()[1]
 
-        a_expand = a.unsqueeze(2).repeat(1,1,size_b,1)
-        b_expand = b.unsqueeze(1).repeat((1,size_a,1,1))
-        merge_tensor = torch.cat([a_expand, b_expand], -1)
+        a_proj = self.linear_1_a(a)
+        b_proj = self.linear_1_b(b)
+        a_expand = a_proj.unsqueeze(2).repeat(1,1,size_b,1)
+        b_expand = b_proj.unsqueeze(1).repeat(1,size_a,1,1)
+        merge_tensor = a_expand + b_expand
 
         output = merge_tensor
-        output = self.linear_1(output)
-        output = self.dropout_1(output)
-        output = F.relu(output)
-        output = self.linear_2(output)
+        #output = F.tanh(output)
+        #output = self.dropout_1(output)
+        #output = self.linear_2(output)
         output = F.sigmoid(output.squeeze(-1))
         return output
 
@@ -57,8 +59,8 @@ class qacnn_1d(nn.Module):
         self.option_length = option_length
         self.dropout = dropout
 
-        self.similarity_layer_pq = similarity_map(word_dim, dropout)
-        self.similarity_layer_pc = similarity_map(word_dim, dropout)
+        self.similarity_layer_pq = similarity_map(word_dim, dropout=dropout)
+        self.similarity_layer_pc = similarity_map(word_dim, dropout=dropout)
 
         filter_num_list = [filter_num]*cnn_layers
         filter_size_list = [filter_size]*cnn_layers
@@ -130,4 +132,4 @@ if __name__ == '__main__':
     q = torch.rand([test_batch_size, question_length, test_word_dim]).float()
     c = torch.rand([test_batch_size, test_option_num, option_length, test_word_dim]).float()
     result = qacnn(p, q, c)
-    print(result)
+    print(result.size())

@@ -25,7 +25,7 @@ class multi_Conv1d(nn.Module):
             if i>0:
                 output += previous_output
         return self.conv_layers_list[-1](output)
-
+"""
 class similarity_map(nn.Module):
     def __init__(self, word_dim, hidden_units=1, dropout=0.1):
         super(similarity_map, self).__init__()
@@ -51,6 +51,7 @@ class similarity_map(nn.Module):
         #output = self.linear_2(output)
         output = F.sigmoid(output.squeeze(-1))
         return output
+"""
 
 class qacnn_1d(nn.Module):
     def __init__(self, question_length, option_length, filter_num, filter_size, cnn_layers, dnn_size, word_dim, dropout=0.1):
@@ -59,8 +60,14 @@ class qacnn_1d(nn.Module):
         self.option_length = option_length
         self.dropout = dropout
 
-        self.similarity_layer_pq = similarity_map(word_dim, dropout=dropout)
-        self.similarity_layer_pc = similarity_map(word_dim, dropout=dropout)
+        #self.similarity_layer_pq = self.com(word_dim, dropout=dropout)
+        #self.similarity_layer_pc = self.com(word_dim, dropout=dropout)
+        #self.p_transform_1 = nn.Linear(word_dim, word_dim)
+        #self.p_transform_2 = nn.Linear(word_dim, word_dim)
+        #self.q_transform_1 = nn.Linear(word_dim, word_dim)
+        #self.q_transform_2 = nn.Linear(word_dim, word_dim)
+        #self.c_transform_1 = nn.Linear(word_dim, word_dim)
+        #self.c_transform_2 = nn.Linear(word_dim, word_dim)
 
         filter_num_list = [filter_num]*cnn_layers
         filter_size_list = [filter_size]*cnn_layers
@@ -78,22 +85,26 @@ class qacnn_1d(nn.Module):
     def forward(self, p, q, c):
         #get option num
         option_num = c.size()[1]
-        p = p.unsqueeze(1).repeat(1,option_num,1,1)
-        q = q.unsqueeze(1).repeat(1,option_num,1,1)
-        #generate similarity map
-        p = p.view([p.size()[0]*option_num, p.size()[2], p.size()[3]])
-        q = q.view([q.size()[0]*option_num, q.size()[2], q.size()[3]])
-        c = c.view([c.size()[0]*option_num, c.size()[2], c.size()[3]])
 
-        pq_map = self.similarity_layer_pq(p, q) # [batch x p_length x q_length]
-        pc_map = self.similarity_layer_pc(p, c) # [batch x p_length x c_length]
+        #expand p and c for option_num times
+        p_expand = p.unsqueeze(1).repeat(1,option_num,1,1)
+        p_expand = p.view([p.size()[0]*option_num, p.size()[2], p.size()[3]])
+        c_expand = c.view([c.size()[0]*option_num, c.size()[2], c.size()[3]])
+
+        pq_map = self.compute_similarity_map(p, q) # [batch x p_length x q_length]
+        pc_map_expand = self.compute_similarity_map(p_expand, c_expand) # [batch*option_num x p_length x c_length]
         pq_map = pq_map.permute([0,2,1]) # [batch x q_length x p_length]
-        pc_map = pc_map.permute([0,2,1]) # [batch x c_length x p_length]
+        pc_map_expand = pc_map_expand.permute([0,2,1]) # [batch*option_num x c_length x p_length]
 
         #first stage
-        first_att = torch.sigmoid(torch.max(self.conv_first_att(pq_map), dim=1)[0])
-        first_representation_pq =  F.relu(torch.max(self.conv_first_pq(pq_map), dim=-1)[0])
-        first_representation_pc =  F.relu(self.conv_first_pc(pc_map))*first_att.unsqueeze(1)
+        first_att = torch.sigmoid(torch.max(self.conv_first_att(pq_map), dim=1)[0]) # [batch x p_length]
+        first_att = first_att.unsqueeze(1).repeat(1,option_num,1)
+        first_att = first_att.view([first_att.size()[0]*option_num, first_att.size()[2]])
+        first_representation_pq =  F.relu(torch.max(self.conv_first_pq(pq_map), dim=-1)[0]) # [batch x channel]
+        first_representation_pq = first_representation_pq.unsqueeze(1).repeat(1,option_num,1)
+        first_representation_pq = first_representation_pq.view([first_att.size()[0]*option_num, first_att.size()[2]])
+
+        first_representation_pc =  F.relu(self.conv_first_pc(pc_map_expand))*first_att.unsqueeze(1)
         first_representation_pc =  torch.max(first_representation_pc, dim=-1)[0]
 
         #second stage

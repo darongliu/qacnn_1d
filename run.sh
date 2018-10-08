@@ -1,16 +1,16 @@
-gpu_id=0
+gpu_id=3
 
 mode='train'
-batch_size=10
+batch_size=32
 
 train_data='/home/kgb/qacnn_1d/data/train.json'
 dev_data='/home/kgb/qacnn_1d/data/dev.json'
 
 dropout=0.1
-cnn_layers=3
+cnn_layers=4
 
 #resume_dir='./model/movie_qa'
-save_dir='./model/kgb_4_nn'
+save_dir='./model/kgb_4_fix'
 test_result='./result'
 
 CUDA_VISIBLE_DEVICES=$gpu_id python main.py $mode --batch_size $batch_size --train_data $train_data --dev_data $dev_data \

@@ -88,7 +88,7 @@ class qacnn_1d(nn.Module):
 
         #expand p and c for option_num times
         p_expand = p.unsqueeze(1).repeat(1,option_num,1,1)
-        p_expand = p.view([p.size()[0]*option_num, p.size()[2], p.size()[3]])
+        p_expand = p_expand.view([p_expand.size()[0]*option_num, p_expand.size()[2], p_expand.size()[3]])
         c_expand = c.view([c.size()[0]*option_num, c.size()[2], c.size()[3]])
 
         pq_map = self.compute_similarity_map(p, q) # [batch x p_length x q_length]
@@ -102,7 +102,7 @@ class qacnn_1d(nn.Module):
         first_att = first_att.view([first_att.size()[0]*option_num, first_att.size()[2]])
         first_representation_pq =  F.relu(torch.max(self.conv_first_pq(pq_map), dim=-1)[0]) # [batch x channel]
         first_representation_pq = first_representation_pq.unsqueeze(1).repeat(1,option_num,1)
-        first_representation_pq = first_representation_pq.view([first_att.size()[0]*option_num, first_att.size()[2]])
+        first_representation_pq = first_representation_pq.view([first_representation_pq.size()[0]*option_num, first_representation_pq.size()[2]])
 
         first_representation_pc =  F.relu(self.conv_first_pc(pc_map_expand))*first_att.unsqueeze(1)
         first_representation_pc =  torch.max(first_representation_pc, dim=-1)[0]

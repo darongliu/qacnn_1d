@@ -219,7 +219,42 @@ def get_feature(data, fasttext_model):
 
     return X_train
 
-def 
+def get_zhuyin_seq(sent, zhuyin_dict):
+    '''
+    zhuyin: {char:[possible_zhuyin_seq1, possible_zhuyin_seq2...]}
+    '''
+    zhuyin_seq = ""
+    for char in sent:
+        if char == ' ':
+            zhuyin += ' '
+            continue
+        if char in zhuyin_dict:
+            zhuyin_combination = zhuyin_dict[char][0][:-1] # no tone
+            zhuyin_seq += zhuyin_combination
+    return zhuyin_seq
+
+def read_zhuyin_dict(path):
+    with open(path, 'r') as f:
+        all_lines = f.read().splitlines()
+    zhuyin_dict = {}
+    for line in all_lines:
+        line = line.strip()
+        char = line.split(' ', 1)[0]
+        combination = line.split(' ', 1)[1].split('/')
+        zhuyin_dict[char] = combination
+    return zhuyin_dict
+
+def aug_with_zhuyin(data):
+    zhuyin_dict = read_zhuyin_dict('./ZhuYin.map')
+
+    all_new_data = []
+    for sample in data:
+        sample['context_bopo'] = get_zhuyin_seq(sample['context_nostop'], zhuyin_dict)
+        sample['question_bopo'] = get_zhuyin_seq(sample['question_nostop'], zhuyin_dict)
+        sample['options_bopo'] = [get_zhuyin_seq(sent, zhuyin_dict) for sent in sample['options_nostop']]
+    all_new_data.append(sample)
+
+    return all_new_data
 
 if __name__ == '__main__':
-    data
+    data1 = {'context_nostop':''}

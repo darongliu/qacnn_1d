@@ -108,31 +108,28 @@ def wer(ref, hyp, mode = 'word', without_len = True):
 def distane_feature(context, question, options):
     choice_num = len(options)
 
-    word_edit = []
-    char_edit = []
-
-    char_lcs = []
+    all_feat = []
 
     for op in options:
+        feat = []
 
         # word based
         w_edit = wer(op, context, mode = 'word')
-        word_edit.append(w_edit)
+        feat.append(w_edit)
 
         # TODO: word based lcs?
 
         # char based
         context_c = context.replace(' ', '')
         op_c = op.replace(' ', '')
-        char_edit.append(wer(op_c, context_c, mode = 'char'))
+        feat.append(wer(op_c, context_c, mode = 'char'))
 
         match = SequenceMatcher(None, context_c, op_c).find_longest_match(0, len(context_c),0,len(op_C))
         lcs = len(context_c[match.a:match.a+match.size])
-        char_lcs.append(lcs)
+        feat.append(lcs)
 
-    ret = word_edit + char_edit + char_lcs
-    ret = np.array(ret)
-    return ret
+    all_feat.append(feat)
+    return np.numpy(all_feat)
 
 def get_feature(data, fasttext_model):
     '''
@@ -207,15 +204,13 @@ def get_feature(data, fasttext_model):
         d_f = distane_feature(context, question, options)
         d_f_bopo = distane_feature(context_bopo, question_bopo, options_bopo)
 
-        is_neg = 0
-
+        is_neg = np.zeros([4,1])
         for neg_word in ['不', '沒有', '否', '不是', '非']:
-            if neg_word in question.split():
-                is_neg = 1
+            if neg_word in question.replace(' ',''):
+                is_neg = np.ones([4,1])
                 break
-        is_neg = [is_neg]
 
-        f = np.concatenate((w_f, c_f, w2v, d_f, is_neg, w_f_bopo, c_f_bopo, d_f_bopo))
+        f = np.concatenate((w_f, c_f, w2v, d_f, is_neg, w_f_bopo, c_f_bopo, d_f_bopo),-1)
         #f = np.concatenate((w_f, c_f, w2v, d_f, is_neg))
 
         X_train.append(f)
@@ -224,15 +219,7 @@ def get_feature(data, fasttext_model):
 
     return X_train
 
+def 
+
 if __name__ == '__main__':
-    import json
-    import _pickle as cPickle
-
-    c_vocab = cPickle.load(open('./preprocess/wiki_c_vocab.pkl', 'rb'))
-    w_vocab = cPickle.load(open('./preprocess/wiki_w_vocab.pkl', 'rb'))
-
-    data = json.load(open('../data/elementary/processed/all.json.seg.scale', 'r'))
-
-    X_train, Y_train = get_feature(data)
-
-    print(X_train.shape)
+    data

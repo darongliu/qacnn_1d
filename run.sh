@@ -5,6 +5,8 @@ batch_size=32
 
 train_data='/home/kgb/qacnn_1d/data/train.json'
 dev_data='/home/kgb/qacnn_1d/data/dev.json'
+#train_data='/home/kgb/qacnn_1d/data/movie_qa/train_part.json'
+#dev_data='/home/kgb/qacnn_1d/data/movie_qa/dev_part.json'
 
 dropout=0.1
 cnn_layers=4

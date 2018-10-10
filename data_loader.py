@@ -57,7 +57,7 @@ class myDataset(torch.utils.data.Dataset):
             flatten_option = [item for sublist in all_option for item in sublist]
             pad_option = _pad_sequence(flatten_option, length=option_length)
             pad_option = pad_option.view([int(pad_option.size()[0]/option_num),option_num,pad_option.size()[1], pad_option.size()[2]])
-            return _pad_sequence(all_context), pad_question, pad_option, all_id, torch.tensor(all_answer), torch.tensor(useful_feat)
+            return _pad_sequence(all_context), pad_question, pad_option, all_id, torch.tensor(all_answer), torch.tensor(useful_feat, dtype=torch.float)
 
         return collate_fn
 

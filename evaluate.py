@@ -14,7 +14,7 @@ def evaluate(model, data_loader):
             context, question, option, _, answer, useful_feat = data
             context, question, option, answer, useful_feat = put_to_cuda([context, question, option, answer, useful_feat])
 
-            output = model(context, question, option)
+            output = model(context, question, option, useful_feat)
             _, predict = torch.max(output, 1)
             total_correct += (predict == answer).sum().detach().cpu().numpy()
             total_count += context.size()[0]

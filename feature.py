@@ -208,10 +208,11 @@ def get_feature(data, fasttext_model):
         d_f = distane_feature(context, question, options)
         d_f_bopo = distane_feature(context_bopo, question_bopo, options_bopo)
 
-        is_neg = np.zeros([4,1])
+        option_num = len(options)
+        is_neg = np.zeros([option_num,1])
         for neg_word in ['不', '沒有', '否', '不是', '非']:
             if neg_word in question.replace(' ',''):
-                is_neg = np.ones([4,1])
+                is_neg = np.ones([option_num,1])
                 break
 
         f = np.concatenate((w_f, c_f, w2v, d_f, is_neg, w_f_bopo, c_f_bopo, d_f_bopo),-1)

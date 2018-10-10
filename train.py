@@ -21,8 +21,8 @@ def train(model, train_data_loader, dev_data_loader, saver, total_epoch, lr, log
         total_count = 0
 
         for i, data in enumerate(train_data_loader):
-            context, question, option, _, answer = data
-            context, question, option, answer = put_to_cuda([context, question, option, answer])
+            context, question, option, _, answer, useful_feat = data
+            context, question, option, answer, useful_feat = put_to_cuda([context, question, option, answer, useful_feat])
 
             optimizer.zero_grad()
             output = model(context, question, option)

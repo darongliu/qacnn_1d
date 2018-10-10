@@ -11,8 +11,8 @@ def evaluate(model, data_loader):
     total_count = 0
     with torch.no_grad():
         for i, data in enumerate(data_loader):
-            context, question, option, _, answer = data
-            context, question, option, answer = put_to_cuda([context, question, option, answer])
+            context, question, option, _, answer, useful_feat = data
+            context, question, option, answer, useful_feat = put_to_cuda([context, question, option, answer, useful_feat])
 
             output = model(context, question, option)
             _, predict = torch.max(output, 1)

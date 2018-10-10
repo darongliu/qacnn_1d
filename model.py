@@ -54,11 +54,12 @@ class similarity_map(nn.Module):
 """
 
 class qacnn_1d(nn.Module):
-    def __init__(self, question_length, option_length, filter_num, filter_size, cnn_layers, dnn_size, word_dim, dropout=0.1):
+    def __init__(self, question_length, option_length, filter_num, filter_size, cnn_layers, dnn_size, word_dim, useful_feat_dim=34, dropout=0.1):
         super(qacnn_1d, self).__init__()
         self.question_length = question_length
         self.option_length = option_length
         self.dropout = dropout
+        self.useful_feat_dim = useful_feat_dim
 
         #self.similarity_layer_pq = self.com(word_dim, dropout=dropout)
         #self.similarity_layer_pc = self.com(word_dim, dropout=dropout)
@@ -79,10 +80,10 @@ class qacnn_1d(nn.Module):
         self.linear_second_pc = nn.Linear(filter_num, filter_num)
 
         self.linear_output_dropout = nn.Dropout(dropout)
-        self.linear_output_1 = nn.Linear(filter_num, dnn_size)
+        self.linear_output_1 = nn.Linear(filter_num+useful_feat_dim, dnn_size)
         self.linear_output_2 = nn.Linear(dnn_size, 1)
 
-    def forward(self, p, q, c):
+    def forward(self, p, q, c, useful_feat):
         #get option num
         option_num = c.size()[1]
 
@@ -113,6 +114,8 @@ class qacnn_1d(nn.Module):
         second_final_representation = second_att * second_pc
 
         #output
+        useful_feat = useful_feat.view([useful_feat.size()[0]*useful_feat.size()[1], useful_feat.size()[2]])
+        second_final_representation = torch.cat([second_final_representation, useful_feat], -1)
         output = self.linear_output_dropout(second_final_representation)
         output = self.linear_output_2(torch.tanh(self.linear_output_1(output)))
         output = output.view([-1, option_num])

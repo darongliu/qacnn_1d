@@ -1,11 +1,14 @@
 import os
 import numpy as np
+import jieba
 
 from tqdm import tqdm
 from difflib import SequenceMatcher
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
+
+from utils.utils import text_norm_before_cut, text_norm_after_cut
 
 DEBUG = False
 
@@ -37,7 +40,7 @@ def bagw_tfidf_sim(cv, tt, context, question, options):
 
     all_feat = []
     for i in range(choice_num):
-        feat = [bag_cq_sim[0], bag_co_sim[0,i], bag_qo_sim[0,i], tfidf_cq_sim[0], tfidf_co_sim[0,i], tfidf_qo_sim[0,i]]
+        feat = [bag_cq_sim[0,0], bag_co_sim[0,i], bag_qo_sim[0,i], tfidf_cq_sim[0,0], tfidf_co_sim[0,i], tfidf_qo_sim[0,i]]
         all_feat.append(feat)
 
     return np.array(all_feat)
@@ -76,7 +79,7 @@ def word_embedding(w2v_model, context, question, options):
 
     all_feat = []
     for i in range(choice_num):
-        feat = [cq_sim[0], co_sim[0,i], qo_sim[0,i]]
+        feat = [cq_sim[0,0], co_sim[0,i], qo_sim[0,i]]
         all_feat.append(feat)
 
     return np.array(all_feat)
@@ -124,12 +127,13 @@ def distane_feature(context, question, options):
         op_c = op.replace(' ', '')
         feat.append(wer(op_c, context_c, mode = 'char'))
 
-        match = SequenceMatcher(None, context_c, op_c).find_longest_match(0, len(context_c),0,len(op_C))
+        match = SequenceMatcher(None, context_c, op_c).find_longest_match(0, len(context_c),0,len(op_c))
         lcs = len(context_c[match.a:match.a+match.size])
         feat.append(lcs)
 
-    all_feat.append(feat)
-    return np.numpy(all_feat)
+        all_feat.append(feat)
+
+    return np.array(all_feat)
 
 def get_feature(data, fasttext_model):
     '''
@@ -226,7 +230,7 @@ def get_zhuyin_seq(sent, zhuyin_dict):
     zhuyin_seq = ""
     for char in sent:
         if char == ' ':
-            zhuyin += ' '
+            zhuyin_seq += ' '
             continue
         if char in zhuyin_dict:
             zhuyin_combination = zhuyin_dict[char][0][:-1] # no tone
@@ -252,9 +256,57 @@ def aug_with_zhuyin(data):
         sample['context_bopo'] = get_zhuyin_seq(sample['context_nostop'], zhuyin_dict)
         sample['question_bopo'] = get_zhuyin_seq(sample['question_nostop'], zhuyin_dict)
         sample['options_bopo'] = [get_zhuyin_seq(sent, zhuyin_dict) for sent in sample['options_nostop']]
-    all_new_data.append(sample)
+
+        sample['context_bopo_stop'] = get_zhuyin_seq(sample['context'], zhuyin_dict)
+        sample['question_bopo_stop_stop'] = get_zhuyin_seq(sample['question'], zhuyin_dict)
+        sample['options_bopo_stop'] = [get_zhuyin_seq(sent, zhuyin_dict) for sent in sample['options']]
+
+        all_new_data.append(sample)
 
     return all_new_data
 
+def cut(text):
+    text = text_norm_before_cut(text)
+    word_list = list(jieba.cut(text))
+    no_stop_word_list = text_norm_after_cut(word_list)
+    return ' '.join(word_list), ' '.join(no_stop_word_list)
+
+def modified_fomrat(origin_data):
+    all_new_data = []
+    for data in origin_data:
+        new_data = {}
+        cut_context = cut(data['context'])
+        new_data['context'] = cut_context[0]
+        new_data['context_nostop'] = cut_context[1]
+
+        cut_question = cut(data['question'])
+        new_data['question'] = cut_question[0]
+        new_data['question_nostop'] = cut_question[1]
+
+        all_option = []
+        all_option_no_stop = []
+        for option in data['options']:
+            cut_text = cut(option)
+            all_option.append(cut_text[0])
+            all_option_no_stop.append(cut_text[1])
+        new_data['options'] = all_option
+        new_data['options_nostop'] = all_option_no_stop
+
+        all_new_data.append(new_data)
+
+    return all_new_data
+
+
 if __name__ == '__main__':
-    data1 = {'context_nostop':''}
+    import json
+    import fastText
+    data = json.load(open('./data/dev.json', 'r'))
+    data = modified_fomrat(data)
+    data = aug_with_zhuyin(data)
+
+    model = fastText.FastText.load_model('./word2vec/model.bin')
+    a = get_feature(data, model)
+    print(a[0])
+    print(a.shape)
+
+

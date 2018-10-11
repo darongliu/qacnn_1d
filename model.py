@@ -54,7 +54,7 @@ class similarity_map(nn.Module):
 """
 
 class qacnn_1d(nn.Module):
-    def __init__(self, question_length, option_length, filter_num, filter_size, cnn_layers, dnn_size, word_dim, useful_feat_dim=34, dropout=0.1):
+    def __init__(self, question_length, option_length, filter_num, filter_size, cnn_layers, dnn_size, word_dim, useful_feat_dim=27, dropout=0.1):
         super(qacnn_1d, self).__init__()
         self.question_length = question_length
         self.option_length = option_length

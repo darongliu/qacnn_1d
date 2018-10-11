@@ -151,7 +151,7 @@ def get_position(context_no_space, text_with_space):
             error_distance = 0
         if error_distance > 2:
             error_distance = 2
-        all_position = find_near_matches(word, context, max_l_dsist=error_distance)
+        all_position = find_near_matches(word, context, max_l_dist=error_distance)
 
         for position in all_position:
             count += 1
@@ -252,8 +252,8 @@ def get_feature(data, fasttext_model):
         d_f = distane_feature(context, question, options)
         d_f_bopo = distane_feature(context_bopo, question_bopo, options_bopo)
 
-        pos = get_position_feat(sample('context').replace(' ',''), question, options)
-        pos_bopo = get_position_feat(sample('context_bopo_stop').replace(' ',''), question_bopo, options_bopo)
+        pos = get_position_feat(sample['context'].replace(' ',''), question, options)
+        pos_bopo = get_position_feat(sample['context_bopo_stop'].replace(' ',''), question_bopo, options_bopo)
 
         option_num = len(options)
         is_neg = np.zeros([option_num,1])
@@ -352,8 +352,6 @@ if __name__ == '__main__':
     data = json.load(open('./data/dev.json', 'r'))
     data = modified_fomrat(data)
     data = aug_with_zhuyin(data)
-    print(data[0])
-    sys.exit(-1)
 
     model = fastText.FastText.load_model('./word2vec/model.bin')
     a = get_feature(data, model)

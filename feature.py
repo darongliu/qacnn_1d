@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import jieba
+from fuzzysearch import find_near_matches
 
 from tqdm import tqdm
 from difflib import SequenceMatcher
@@ -40,7 +41,8 @@ def bagw_tfidf_sim(cv, tt, context, question, options):
 
     all_feat = []
     for i in range(choice_num):
-        feat = [bag_cq_sim[0,0], bag_co_sim[0,i], bag_qo_sim[0,i], tfidf_cq_sim[0,0], tfidf_co_sim[0,i], tfidf_qo_sim[0,i]]
+        #feat = [bag_cq_sim[0,0], bag_co_sim[0,i], bag_qo_sim[0,i], tfidf_cq_sim[0,0], tfidf_co_sim[0,i], tfidf_qo_sim[0,i]]
+        feat = [bag_co_sim[0,i], bag_qo_sim[0,i], tfidf_co_sim[0,i], tfidf_qo_sim[0,i]]
         all_feat.append(feat)
 
     return np.array(all_feat)
@@ -79,7 +81,8 @@ def word_embedding(w2v_model, context, question, options):
 
     all_feat = []
     for i in range(choice_num):
-        feat = [cq_sim[0,0], co_sim[0,i], qo_sim[0,i]]
+        #feat = [cq_sim[0,0], co_sim[0,i], qo_sim[0,i]]
+        feat = [co_sim[0,i], qo_sim[0,i]]
         all_feat.append(feat)
 
     return np.array(all_feat)
@@ -106,7 +109,7 @@ def wer(ref, hyp, mode = 'word', without_len = True):
             else:
                 d[i,j] = min(d[i-1,j]+1, d[i,j-1]+1, d[i-1,j-1]+1)
 
-    return d[-1,-1]
+    return d[-1,-1]-len(s1)
 
 def distane_feature(context, question, options):
     choice_num = len(options)
@@ -117,7 +120,7 @@ def distane_feature(context, question, options):
         feat = []
 
         # word based
-        w_edit = wer(op, context, mode = 'word')
+        w_edit = wer(context, op, mode = 'word')
         feat.append(w_edit)
 
         # TODO: word based lcs?
@@ -125,7 +128,7 @@ def distane_feature(context, question, options):
         # char based
         context_c = context.replace(' ', '')
         op_c = op.replace(' ', '')
-        feat.append(wer(op_c, context_c, mode = 'char'))
+        feat.append(wer(context_c, op_c, mode = 'char'))
 
         match = SequenceMatcher(None, context_c, op_c).find_longest_match(0, len(context_c),0,len(op_c))
         lcs = len(context_c[match.a:match.a+match.size])
@@ -133,6 +136,48 @@ def distane_feature(context, question, options):
 
         all_feat.append(feat)
 
+    return np.array(all_feat)
+
+def get_position(context_no_space, text_with_space):
+    context = context_no_space
+    text = text_with_space.split()
+
+    accumulate_position = 0
+    count = 0
+
+    for word in text:
+        error_distance = len(word) - 2
+        if error_distance < 0:
+            error_distance = 0
+        if error_distance > 2:
+            error_distance = 2
+        all_position = find_near_matches(word, context, max_l_dsist=error_distance)
+
+        if len(position) != 0:
+            for position in all_position:
+                count += 1
+                accumulate_position += (position[0]+position[1])/2
+
+    if count == 0:
+        return -1
+
+    return accumulate_position/count
+
+def get_position_feat(context_no_space, question, options):
+    pos_q = get_position(context_no_space, question)
+    all_feat = []
+    for op in options:
+        pos_op = get_position(context_no_space, op)
+        if pos_q == -1:
+            if pos_op == -1:
+                all_feat.append([1.])
+            else:
+                all_feat.append([0.5])
+        else:
+            if pos_op == -1:
+                all_feat.append([1.])
+            else:
+                all_feat.append([abs(pos_op-pos_q)/len(context_no_space)])
     return np.array(all_feat)
 
 def get_feature(data, fasttext_model):

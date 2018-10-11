@@ -80,8 +80,8 @@ class qacnn_1d(nn.Module):
         self.linear_second_pc = nn.Linear(filter_num, filter_num)
 
         self.linear_output_dropout = nn.Dropout(dropout)
-        self.linear_output_1 = nn.Linear(filter_num+useful_feat_dim, dnn_size)
-        self.linear_output_2 = nn.Linear(dnn_size, 1)
+        self.linear_output_1 = nn.Linear(filter_num, dnn_size)
+        self.linear_output_2 = nn.Linear(dnn_size+useful_feat_dim, 1)
 
     def forward(self, p, q, c, useful_feat):
         #get option num
@@ -115,9 +115,10 @@ class qacnn_1d(nn.Module):
 
         #output
         useful_feat = useful_feat.view([useful_feat.size()[0]*useful_feat.size()[1], useful_feat.size()[2]])
-        second_final_representation = torch.cat([second_final_representation, useful_feat], -1)
         output = self.linear_output_dropout(second_final_representation)
-        output = self.linear_output_2(torch.tanh(self.linear_output_1(output)))
+        output = torch.tanh(self.linear_output_1(output))
+        output = torch.cat([output, useful_feat], -1)
+        output = self.linear_output_2(output)
         output = output.view([-1, option_num])
 
         return F.softmax(output, dim=-1)

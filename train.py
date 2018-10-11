@@ -25,7 +25,7 @@ def train(model, train_data_loader, dev_data_loader, saver, total_epoch, lr, log
             context, question, option, answer, useful_feat = put_to_cuda([context, question, option, answer, useful_feat])
 
             optimizer.zero_grad()
-            output = model(context, question, option)
+            output = model(context, question, option, useful_feat)
             loss = criterion(output, answer)
             loss.backward()
             optimizer.step()

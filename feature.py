@@ -153,10 +153,9 @@ def get_position(context_no_space, text_with_space):
             error_distance = 2
         all_position = find_near_matches(word, context, max_l_dsist=error_distance)
 
-        if len(position) != 0:
-            for position in all_position:
-                count += 1
-                accumulate_position += (position[0]+position[1])/2
+        for position in all_position:
+            count += 1
+            accumulate_position += (position[0]+position[1])/2
 
     if count == 0:
         return -1
@@ -253,6 +252,9 @@ def get_feature(data, fasttext_model):
         d_f = distane_feature(context, question, options)
         d_f_bopo = distane_feature(context_bopo, question_bopo, options_bopo)
 
+        pos = get_position_feat(sample('context').replace(' ',''), question, options)
+        pos_bopo = get_position_feat(sample('context_bopo_stop').replace(' ',''), question_bopo, options_bopo)
+
         option_num = len(options)
         is_neg = np.zeros([option_num,1])
         for neg_word in ['不', '沒有', '否', '不是', '非']:
@@ -260,8 +262,8 @@ def get_feature(data, fasttext_model):
                 is_neg = np.ones([option_num,1])
                 break
 
-        f = np.concatenate((w_f, c_f, w2v, d_f, is_neg, w_f_bopo, c_f_bopo, d_f_bopo),-1)
-        #f = np.concatenate((w_f, c_f, w2v, d_f, is_neg))
+        f = np.concatenate((w_f, c_f, w2v, d_f, is_neg, w_f_bopo, c_f_bopo, d_f_bopo, pos, pos_bopo),-1)
+        #f = np.concatenate((w_f, c_f, w2v, d_f, is_neg, pos, pos_bopo))
 
         X_train.append(f)
 
@@ -304,7 +306,7 @@ def aug_with_zhuyin(data):
         sample['options_bopo'] = [get_zhuyin_seq(sent, zhuyin_dict) for sent in sample['options_nostop']]
 
         sample['context_bopo_stop'] = get_zhuyin_seq(sample['context'], zhuyin_dict)
-        sample['question_bopo_stop_stop'] = get_zhuyin_seq(sample['question'], zhuyin_dict)
+        sample['question_bopo_stop'] = get_zhuyin_seq(sample['question'], zhuyin_dict)
         sample['options_bopo_stop'] = [get_zhuyin_seq(sent, zhuyin_dict) for sent in sample['options']]
 
         all_new_data.append(sample)
@@ -346,9 +348,12 @@ def modified_fomrat(origin_data):
 if __name__ == '__main__':
     import json
     import fastText
+    import sys
     data = json.load(open('./data/dev.json', 'r'))
     data = modified_fomrat(data)
     data = aug_with_zhuyin(data)
+    print(data[0])
+    sys.exit(-1)
 
     model = fastText.FastText.load_model('./word2vec/model.bin')
     a = get_feature(data, model)

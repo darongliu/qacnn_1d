@@ -12,7 +12,7 @@ dropout=0.1
 cnn_layers=4
 
 #resume_dir='./model/movie_qa'
-save_dir='./model/test_wer_devide_s2'
+save_dir='./model/test_diff_valid_margin'
 test_result='./result'
 
 CUDA_VISIBLE_DEVICES=$gpu_id python main.py $mode --batch_size $batch_size --train_data $train_data --dev_data $dev_data \

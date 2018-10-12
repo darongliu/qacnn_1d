@@ -87,7 +87,7 @@ def word_embedding(w2v_model, context, question, options):
 
     return np.array(all_feat)
 
-def wer(ref, hyp, mode = 'word', without_len = True):
+def wer(ref, hyp, mode = 'word', without_len = False):
     if ref == '':
         r = '慘'
 
@@ -254,8 +254,8 @@ def get_feature(data, fasttext_model):
         d_f = distane_feature(context, question, options)
         d_f_bopo = distane_feature(context_bopo, question_bopo, options_bopo)
 
-        pos = get_position_feat(sample['context'].replace(' ',''), question, options, 2, 0, 3)
-        pos_bopo = get_position_feat(sample['context_bopo_stop'].replace(' ',''), question_bopo, options_bopo, 4, 1, 3)
+        pos = get_position_feat(sample['context'].replace(' ',''), question, options, 0, 1, 2)
+        pos_bopo = get_position_feat(sample['context_bopo_stop'].replace(' ',''), question_bopo, options_bopo, 0, 1, 2)
 
         option_num = len(options)
         is_neg = np.zeros([option_num,1])
@@ -306,7 +306,7 @@ def similar_bopo_replace(text):
     text = text.replace('ㄧ', 'ㄩ')
     return text
 
-def aug_with_zhuyin(data, similar_bopo_replace=False):
+def aug_with_zhuyin(data, replace=False):
     zhuyin_dict = read_zhuyin_dict('./ZhuYin.map')
 
     all_new_data = []
@@ -319,7 +319,7 @@ def aug_with_zhuyin(data, similar_bopo_replace=False):
         sample['question_bopo_stop'] = get_zhuyin_seq(sample['question'], zhuyin_dict)
         sample['options_bopo_stop'] = [get_zhuyin_seq(sent, zhuyin_dict) for sent in sample['options']]
 
-        if similar_bopo_replace:
+        if replace:
             sample['context_bopo'] = similar_bopo_replace(sample['context_bopo'])
             sample['question_bopo'] = similar_bopo_replace(sample['question_bopo'])
             sample['options_bopo'] = [similar_bopo_replace(text) for text in sample['options_bopo']]

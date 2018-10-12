@@ -74,8 +74,7 @@ def main(args):
 
     else:
         test_dataset = myDataset(args.test_data)
-        test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1,
-                                                  shuffle=False, num_workers=1)
+        test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, collate_fn=myDataset.get_collate_fn(args.question_length, args.option_length), shuffle=False, num_workers=2)
         if args.resume_dir == '':
             print("resume should exist in inference mode", file=sys.stderr)
             sys.exit(-1)

@@ -149,8 +149,8 @@ def get_position(context_no_space, text_with_space):
         error_distance = len(word) - 2
         if error_distance < 0:
             error_distance = 0
-        if error_distance > 2:
-            error_distance = 2
+        if error_distance > 1:
+            error_distance = 1
         all_position = find_near_matches(word, context, max_l_dist=error_distance)
 
         for position in all_position:
@@ -245,7 +245,7 @@ def get_feature(data, fasttext_model):
         c_f = bagw_tfidf_sim(c_cv, c_tt, context, question, options)
 
         w_f_bopo = bagw_tfidf_sim(w_cv_bopo, w_tt_bopo, context_bopo, question, options)
-        c_f_bopo = bagw_tfidf_sim(c_cv_bopo, c_tt_bopo, context_bopo, question, options)
+        c_f_bopo = bagw_tfidf_sim(c_cv_bopo, c_tt_bopo, context_bopo, question_bopo, options_bopo)
 
         w2v = word_embedding(w2v_model, context, question, options)
 

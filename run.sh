@@ -1,4 +1,4 @@
-gpu_id=0
+gpu_id=3
 
 mode='train'
 batch_size=32
@@ -6,13 +6,13 @@ batch_size=32
 train_data='/home/kgb/qacnn_1d/data/train.json'
 dev_data='/home/kgb/qacnn_1d/data/dev.json'
 #train_data='/home/kgb/qacnn_1d/data/movie_qa/train_part.json'
-dev_data='/home/kgb/qacnn_1d/data/movie_qa/dev_part.json'
+#dev_data='/home/kgb/qacnn_1d/data/movie_qa/dev_part.json'
 
 dropout=0.1
 cnn_layers=4
 
 #resume_dir='./model/movie_qa'
-save_dir='./model/test_wer_devide_s2'
+save_dir='./model/test_final_4'
 test_result='./result'
 
 CUDA_VISIBLE_DEVICES=$gpu_id python main.py $mode --batch_size $batch_size --train_data $train_data --dev_data $dev_data \

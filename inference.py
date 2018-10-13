@@ -8,6 +8,7 @@ def inference(model, test_data_loader, output_path, output_prob='./prob'):
     #for i, data in enumerate(tqdm.tqdm(test_data_loader)):
     for i, data in enumerate(test_data_loader):
         context, question, option, question_id, _, useful_feat = data
+        #context = torch.cat([context, torch.zeros([1,10,context.size()[-1]])], 1)
         context, question, option, useful_feat = put_to_cuda([context, question, option, useful_feat])
 
         output = model(context, question, option, useful_feat)

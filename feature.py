@@ -87,7 +87,7 @@ def word_embedding(w2v_model, context, question, options):
 
     return np.array(all_feat)
 
-def wer(ref, hyp, mode = 'word', without_len = True):
+def wer(ref, hyp, mode = 'word', without_len = False):
     if ref == '':
         r = '慘'
 
@@ -138,7 +138,7 @@ def distane_feature(context, question, options):
 
     return np.array(all_feat)
 
-def get_position(context_no_space, text_with_space):
+def get_position(context_no_space, text_with_space, valid_length, max_error, margin_error):
     context = context_no_space
     text = text_with_space.split()
 
@@ -146,11 +146,13 @@ def get_position(context_no_space, text_with_space):
     count = 0
 
     for word in text:
-        error_distance = len(word) - 2
+        if len(word) < valid_length:
+            continue
+        error_distance = len(word) - margin_error
         if error_distance < 0:
             error_distance = 0
-        if error_distance > 1:
-            error_distance = 1
+        if error_distance > max_error:
+            error_distance = max_error
         all_position = find_near_matches(word, context, max_l_dist=error_distance)
 
         for position in all_position:
@@ -162,11 +164,11 @@ def get_position(context_no_space, text_with_space):
 
     return accumulate_position/count
 
-def get_position_feat(context_no_space, question, options):
-    pos_q = get_position(context_no_space, question)
+def get_position_feat(context_no_space, question, options, valid_length, max_error, margin_error):
+    pos_q = get_position(context_no_space, question, valid_length, max_error, margin_error)
     all_feat = []
     for op in options:
-        pos_op = get_position(context_no_space, op)
+        pos_op = get_position(context_no_space, op, valid_length, max_error, margin_error)
         if pos_q == -1:
             if pos_op == -1:
                 all_feat.append([1.])
@@ -252,8 +254,8 @@ def get_feature(data, fasttext_model):
         d_f = distane_feature(context, question, options)
         d_f_bopo = distane_feature(context_bopo, question_bopo, options_bopo)
 
-        pos = get_position_feat(sample['context'].replace(' ',''), question, options)
-        pos_bopo = get_position_feat(sample['context_bopo_stop'].replace(' ',''), question_bopo, options_bopo)
+        pos = get_position_feat(sample['context'].replace(' ',''), question, options, 0, 1, 2)
+        pos_bopo = get_position_feat(sample['context_bopo_stop'].replace(' ',''), question_bopo, options_bopo, 0, 1, 2)
 
         option_num = len(options)
         is_neg = np.zeros([option_num,1])
@@ -296,7 +298,15 @@ def read_zhuyin_dict(path):
         zhuyin_dict[char] = combination
     return zhuyin_dict
 
-def aug_with_zhuyin(data):
+def similar_bopo_replace(text):
+    text = text.replace('ㄓ', 'ㄗ')
+    text = text.replace('ㄔ', 'ㄘ')
+    text = text.replace('ㄕ', 'ㄙ')
+    text = text.replace('ㄣ', 'ㄥ')
+    text = text.replace('ㄧ', 'ㄩ')
+    return text
+
+def aug_with_zhuyin(data, replace=False):
     zhuyin_dict = read_zhuyin_dict('./ZhuYin.map')
 
     all_new_data = []
@@ -309,6 +319,13 @@ def aug_with_zhuyin(data):
         sample['question_bopo_stop'] = get_zhuyin_seq(sample['question'], zhuyin_dict)
         sample['options_bopo_stop'] = [get_zhuyin_seq(sent, zhuyin_dict) for sent in sample['options']]
 
+        if replace:
+            sample['context_bopo'] = similar_bopo_replace(sample['context_bopo'])
+            sample['question_bopo'] = similar_bopo_replace(sample['question_bopo'])
+            sample['options_bopo'] = [similar_bopo_replace(text) for text in sample['options_bopo']]
+            sample['context_bopo_stop'] = similar_bopo_replace(sample['context_bopo_stop'])
+            sample['question_bopo_stop'] = similar_bopo_replace(sample['question_bopo_stop'])
+            sample['options_bopo_stop'] = [similar_bopo_replace(text) for text in sample['options_bopo_stop']]
         all_new_data.append(sample)
 
     return all_new_data
